@@ -63,7 +63,8 @@
 //!     [`SetSize`](terminal/struct.SetSize.html),
 //!     [`SetTitle`](terminal/struct.SetTitle.html),
 //!     [`DisableLineWrap`](terminal/struct.DisableLineWrap.html),
-//!     [`EnableLineWrap`](terminal/struct.EnableLineWrap.html)
+//!     [`EnableLineWrap`](terminal/struct.EnableLineWrap.html),
+//!     [`CopyToClipboard`](terminal/struct.CopyToClipboard.html)
 //!   - Alternate screen - [`EnterAlternateScreen`](terminal/struct.EnterAlternateScreen.html),
 //!     [`LeaveAlternateScreen`](terminal/struct.LeaveAlternateScreen.html)
 //!

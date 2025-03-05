@@ -85,6 +85,8 @@
 
 use std::{fmt, io};
 
+#[cfg(feature = "clipboard")]
+use base64::prelude::{Engine, BASE64_STANDARD};
 #[cfg(windows)]
 use crossterm_winapi::{ConsoleMode, Handle, ScreenBuffer};
 #[cfg(feature = "serde")]
@@ -92,6 +94,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(windows)]
 use winapi::um::wincon::ENABLE_WRAP_AT_EOL_OUTPUT;
 
+#[cfg(feature = "clipboard")]
+use crate::osc;
 #[doc(no_inline)]
 use crate::Command;
 use crate::{csi, impl_display};
@@ -396,6 +400,63 @@ impl<T: fmt::Display> Command for SetTitle<T> {
     }
 }
 
+/// Different clipboard classes
+#[cfg(feature = "clipboard")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ClipboardDestination {
+    /// Default clipboard when using Ctrl+C or Ctrl+V
+    Clipboard,
+
+    /// Clipboard on Linux/X/Wayland when using selection and middle mouse button
+    Primary,
+}
+
+/// A command that copies to clipboard
+///
+/// # Notes
+///
+/// This command uses OSC control sequence `Pr = 5 2` (See
+/// [XTerm Control Sequences](https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands) )
+/// to copy data to the terminal host clipboard.
+///
+/// This only works if it is enabled on the respective terminal emulator. If a terminal multiplexer
+/// is used, the multiplexer will likely need to support it, too.
+///
+/// Commands must be executed/queued for execution otherwise they do nothing.
+///
+/// # Examples
+///
+/// See examples/copy.rs for a working example.
+#[cfg(feature = "clipboard")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CopyToClipboard<T>(pub T, pub ClipboardDestination);
+
+#[cfg(feature = "clipboard")]
+impl<T: AsRef<[u8]>> Command for CopyToClipboard<T> {
+    fn write_ansi(&self, f: &mut impl fmt::Write) -> fmt::Result {
+        write!(
+            f,
+            osc!("52;{destination};{encoded_text}"),
+            destination = match self.1 {
+                ClipboardDestination::Clipboard => 'c',
+                ClipboardDestination::Primary => 'p',
+            },
+            encoded_text = BASE64_STANDARD.encode(&self.0)
+        )
+    }
+
+    #[cfg(windows)]
+    fn execute_winapi(&self) -> std::io::Result<()> {
+        use std::io;
+
+        Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "Copying is not implemented for the Windows API.",
+        ))
+    }
+
+}
+
 /// A command that instructs the terminal emulator to begin a synchronized frame.
 ///
 /// # Notes
@@ -564,5 +625,21 @@ mod tests {
 
         // check we're back to normal mode
         assert!(!is_raw_mode_enabled().unwrap());
+    }
+
+    #[test]
+    #[cfg(feature = "clipboard")]
+    fn test_copy_string_osc52() {
+        let mut buffer = String::new();
+        super::CopyToClipboard("foo", ClipboardDestination::Clipboard)
+            .write_ansi(&mut buffer)
+            .unwrap();
+        assert_eq!(buffer, "\x1b]52;c;Zm9v\x07");
+
+        buffer.clear();
+        super::CopyToClipboard("foo", ClipboardDestination::Primary)
+            .write_ansi(&mut buffer)
+            .unwrap();
+        assert_eq!(buffer, "\x1b]52;p;Zm9v\x07");
     }
 }
