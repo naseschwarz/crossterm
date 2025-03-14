@@ -3,8 +3,8 @@ name: Crossterm Test
 on:
   # Build master branch only
   push:
-    branches:
-      - master
+    branches: 
+      - '*'
   # Build pull requests targeting master branch only
   pull_request:
     branches:
