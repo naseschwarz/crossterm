@@ -190,7 +190,7 @@ impl ScreenBufferCursor {
     fn save_position(&self) -> std::io::Result<()> {
         let position = self.position()?;
 
-        let bits = u64::from(u32::from(position.x as u16) << 16 | u32::from(position.y as u16));
+        let bits = u64::from((u32::from(position.x as u16) << 16) | u32::from(position.y as u16));
         SAVED_CURSOR_POS.store(bits, Ordering::Relaxed);
 
         Ok(())
