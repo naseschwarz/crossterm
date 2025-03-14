@@ -454,7 +454,6 @@ impl<T: AsRef<[u8]>> Command for CopyToClipboard<T> {
             "Copying is not implemented for the Windows API.",
         ))
     }
-
 }
 
 /// A command that instructs the terminal emulator to begin a synchronized frame.
@@ -641,5 +640,15 @@ mod tests {
             .write_ansi(&mut buffer)
             .unwrap();
         assert_eq!(buffer, "\x1b]52;p;Zm9v\x07");
+    }
+
+    #[test]
+    #[cfg(all(feature = "clipboard", feature = "test-in-terminal"))]
+    fn test_copy_string_osc52_terminal() {
+        execute!(
+            stdout(),
+            super::CopyToClipboard("knorke", ClipboardDestination::Clipboard)
+        )
+        .unwrap();
     }
 }

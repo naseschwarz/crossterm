@@ -50,6 +50,9 @@ derive-more = ["dep:derive_more"]
 ## Enables copying to terminal via the CopyToClipboard command
 clipboard = ["dep:base64"]
 
+## Enable tests that require a terminal
+test-in-terminal = []
+
 [dependencies]
 base64 = { version = "0.22", optional = true }
 bitflags = { version = "2.3" }
